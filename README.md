@@ -62,10 +62,16 @@ Loomis AI bridges classical fine art pedagogy and modern computer vision:
 ```text
 loomis-ai/
 ├── backend/
-│   ├── models/            # Domain entities, schemas, and landmark data models
-│   ├── services/          # Computer vision, geometry calculation, and stage generation services
-│   ├── outputs/           # Temporary processed images and generated visual stages
-│   └── tests/             # Backend unit and integration tests
+│   ├── main.py            # FastAPI application entry point & API route handlers
+│   ├── requirements.txt   # Pinned Python backend dependencies
+│   ├── README.md          # Backend guide and setup walkthrough
+│   ├── schemas/           # Pydantic schemas (HealthResponse, ImagePreprocessResponse)
+│   ├── services/          # Core domain services
+│   │   ├── image_validator.py  # Content-based format, dimension, and size validation
+│   │   └── image_processor.py  # EXIF rotation, RGB normalization, aspect-ratio resizing
+│   ├── models/            # Future domain models & landmark entities (Phase 3/4)
+│   ├── outputs/           # Ephemeral processed session artifacts (git-ignored)
+│   └── tests/             # Automated test suite (health check, upload & validation tests)
 ├── frontend/
 │   └── src/
 │       ├── components/    # Reusable UI components (Canvas, Stepper, Opacity Slider)
@@ -77,16 +83,61 @@ loomis-ai/
 ├── docs/                  # Architecture, specifications, and ML methodology
 │   └── phase-reports/     # Granular verification reports for each project phase
 ├── tests/                 # End-to-end integration tests
+├── requirements.txt       # Root convenience pointer to backend/requirements.txt
 ├── README.md              # Project documentation and setup guide
 └── .gitignore             # Environment, build, and private data exclusion rules
 ```
 
 ---
 
+## 💻 Local Setup & Development
+
+### 1. Python Virtual Environment Setup
+
+Ensure Python 3.10+ (tested on Python 3.12.5) is installed.
+
+#### On Windows (PowerShell):
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r backend/requirements.txt
+```
+
+#### On Windows (Command Prompt `cmd`):
+```cmd
+python -m venv .venv
+.venv\Scripts\activate.bat
+pip install -r backend/requirements.txt
+```
+
+#### On macOS / Linux:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+```
+
+### 2. Running the Backend Server
+
+```bash
+uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+```
+- API Base: `http://127.0.0.1:8000`
+- Interactive API Docs (Swagger UI): `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
+
+### 3. Running Automated Tests
+
+```bash
+python -m pytest backend/tests -v
+```
+
+---
+
 ## 🗺️ Development Roadmap
 
-- **Phase 0: Project Foundation** *(Current)* – Directory structure, specifications, architecture blueprints, repository standards.
-- **Phase 1: Image Upload and Preprocessing** – Secure file upload API, format validation, orientation correction, and image resizing.
+- **Phase 0: Project Foundation** *(Completed)* – Directory structure, specifications, architecture blueprints, repository standards.
+- **Phase 1: Image Upload and Preprocessing** *(Completed)* – Secure in-memory file upload API, content-based validation, EXIF orientation correction, and aspect-ratio-preserving resizing.
 - **Phase 2: Face Detection** – Face detection validation, bounding box extraction, and multi-face rejection.
 - **Phase 3: Facial Landmarks and Head Pose Estimation** – MediaPipe Face Landmarker integration, 3D coordinate mapping, and pitch/yaw/roll computation.
 - **Phase 4: Loomis Construction Engine** – Mathematical cranium sphere calculation, lateral cut plane fitting, and facial thirds line generation.
@@ -101,7 +152,7 @@ loomis-ai/
 
 ## 🚦 Current Development Status
 
-- **Current Phase**: **Phase 0 – Project Foundation**
-- **Status**: Completed
-- **Next Phase**: Phase 1 – Image Upload and Preprocessing (pending review and approval)
+- **Current Phase**: **Phase 1 – Image Upload and Preprocessing**
+- **Status**: Completed (15 / 15 automated tests passing; live endpoints verified)
+- **Next Phase**: Phase 2 – Face Detection (pending review and approval)
 

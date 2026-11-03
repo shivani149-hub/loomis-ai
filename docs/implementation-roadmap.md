@@ -15,7 +15,7 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 
 
 ## Detailed Phase Breakdown
 
-### Phase 0: Project Foundation (Current Phase)
+### Phase 0: Project Foundation (Completed)
 - **Objective**: Establish the project directory skeleton, engineering standards, architecture blueprints, roadmap, and privacy-conscious version control configuration.
 - **Key Deliverables**:
   - Clean modular directory layout (`backend/`, `frontend/`, `mobile/`, `docs/`, `tests/`).
@@ -23,20 +23,25 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 
   - Rigorous `.gitignore` preventing user uploads, generated art, and environment files from leaking into Git.
   - Phase 0 verification report (`docs/phase-reports/phase-0.md`).
 - **Acceptance Criteria**: All folders exist, documents are complete, Mermaid diagram is syntactically valid, and no application code or unused packages are prematurely introduced.
+- **Status**: ✅ Completed.
 
 ---
 
-### Phase 1: Image Upload and Preprocessing
-- **Objective**: Implement a robust image ingestion pipeline in FastAPI capable of receiving, validating, and normalizing portrait photographs.
+### Phase 1: Image Upload and Preprocessing (Completed)
+- **Objective**: Implement a robust in-memory image ingestion and preprocessing pipeline in FastAPI capable of receiving, validating, and normalizing portrait photographs.
 - **Key Deliverables**:
-  - FastAPI application entry point with `/api/v1/health` and `/api/v1/upload` endpoints.
-  - Preprocessing service using OpenCV:
-    - Format validation (JPEG, PNG, WebP).
-    - EXIF orientation auto-correction.
-    - Long-edge dimension scaling (preserving aspect ratio) to a normalized resolution (e.g., 1024px).
-    - Color profile normalization to standard RGB.
-  - Unit tests for valid and malformed image inputs.
-- **Acceptance Criteria**: Uploaded photos are successfully decoded into standard NumPy arrays, corrected for orientation, normalized in size, and stored in ephemeral session paths.
+  - FastAPI application entry point with `GET /api/health` and `POST /api/images/preprocess` endpoints.
+  - Preprocessing service using Pillow:
+    - Format validation (JPEG, PNG, WebP) based on file content, not headers.
+    - EXIF orientation auto-correction using `ImageOps.exif_transpose`.
+    - Long-edge dimension scaling (preserving aspect ratio) to a maximum dimension of 1024px.
+    - Color profile and transparency normalization to standard 3-channel RGB.
+    - Maximum upload size enforcement (10 MB) and decompression bomb protection (8192px max dim).
+    - In-memory Base64 JPEG response serialization without persistent disk storage.
+  - Unit tests covering 15 automated test cases across valid uploads, resizing, EXIF handling, and error states.
+  - Phase 1 verification report (`docs/phase-reports/phase-1.md`).
+- **Acceptance Criteria**: Uploaded photos are successfully decoded in memory, corrected for orientation, normalized in size, validated against corruption, and returned with metadata.
+- **Status**: ✅ Completed.
 
 ---
 
