@@ -48,12 +48,12 @@ Loomis AI bridges classical fine art pedagogy and modern computer vision:
 | Layer | Technologies | Role / Description |
 |---|---|---|
 | **Backend** | Python 3.10+, FastAPI, Uvicorn | RESTful API service, pipeline orchestration |
-| **Landmark Detection** | MediaPipe Face Landmarker | High-density 3D facial mesh coordinate detection |
-| **Image & Geometry** | OpenCV (`cv2`), NumPy | Image normalization, matrix transformations, geometric projections, line rendering |
-| **Drawing Engine** | Custom Geometry Algorithms | Mathematical Loomis cranium sphere and guide generation |
-| **Web Frontend** | React, Modern Bundler (Vite), CSS | Interactive drawing tutor UI, canvas overlays, step viewer |
-| **Mobile App (Future)** | React Native, Expo | Cross-platform tablet and mobile application |
-| **Testing & CI** | Pytest, Jest / Vitest | Automated backend and frontend test suites |
+| **Landmark Detection** | MediaPipe Face Landmarker (Tasks API) | 478 dense 3D facial mesh coordinates in IMAGE running mode |
+| **Image & Geometry** | Pillow, OpenCV, NumPy | In-memory image processing, matrix transformations, coordinate scaling |
+| **Drawing Engine** | Custom Geometry Algorithms | Mathematical Loomis cranium sphere and guide generation (Phase 4) |
+| **Web Frontend** | React, Modern Bundler (Vite), CSS | Interactive drawing tutor UI, canvas overlays, step viewer (Phase 7) |
+| **Mobile App (Future)** | React Native, Expo | Cross-platform tablet and mobile application (Phase 9) |
+| **Testing & CI** | Pytest, FastAPI TestClient (HTTPX) | Automated backend test suite (24 passing tests) |
 
 ---
 
@@ -62,16 +62,26 @@ Loomis AI bridges classical fine art pedagogy and modern computer vision:
 ```text
 loomis-ai/
 ├── backend/
-│   ├── main.py            # FastAPI application entry point & API route handlers
+│   ├── main.py            # FastAPI application entry point, lifecycle management & route handlers
 │   ├── requirements.txt   # Pinned Python backend dependencies
 │   ├── README.md          # Backend guide and setup walkthrough
-│   ├── schemas/           # Pydantic schemas (HealthResponse, ImagePreprocessResponse)
+│   ├── models/            # MediaPipe model assets
+│   │   ├── face_landmarker.task  # Official MediaPipe Face Landmarker Tasks model
+│   │   └── .gitkeep
+│   ├── schemas/           # Pydantic schemas
+│   │   ├── health.py      # HealthResponse
+│   │   ├── image.py       # ImagePreprocessResponse
+│   │   └── landmark.py    # FacialLandmark & FaceLandmarksResponse
 │   ├── services/          # Core domain services
 │   │   ├── image_validator.py  # Content-based format, dimension, and size validation
-│   │   └── image_processor.py  # EXIF rotation, RGB normalization, aspect-ratio resizing
-│   ├── models/            # Future domain models & landmark entities (Phase 3/4)
+│   │   ├── image_processor.py  # EXIF rotation, RGB normalization, aspect-ratio resizing
+│   │   └── face_detector.py    # MediaPipe Face Landmarker inference & single-face policy
 │   ├── outputs/           # Ephemeral processed session artifacts (git-ignored)
-│   └── tests/             # Automated test suite (health check, upload & validation tests)
+│   │   └── .gitkeep
+│   └── tests/             # Automated test suite
+│       ├── test_health.py           # Health check endpoint tests
+│       ├── test_image_upload.py     # Image upload, validation, and resizing tests
+│       └── test_face_detection.py   # Landmark extraction, error handling, coordinate math tests
 ├── frontend/
 │   └── src/
 │       ├── components/    # Reusable UI components (Canvas, Stepper, Opacity Slider)
@@ -81,7 +91,14 @@ loomis-ai/
 │       └── assets/        # Static assets, icons, and illustration resources
 ├── mobile/                # Future React Native / Expo application
 ├── docs/                  # Architecture, specifications, and ML methodology
+│   ├── architecture.md
+│   ├── implementation-roadmap.md
+│   ├── ml-methodology.md
+│   ├── project-overview.md
 │   └── phase-reports/     # Granular verification reports for each project phase
+│       ├── phase-0.md     # Phase 0 verification report
+│       ├── phase-1.md     # Phase 1 verification report
+│       └── phase-2.md     # Phase 2 verification report
 ├── tests/                 # End-to-end integration tests
 ├── requirements.txt       # Root convenience pointer to backend/requirements.txt
 ├── README.md              # Project documentation and setup guide
@@ -117,7 +134,17 @@ source .venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-### 2. Running the Backend Server
+### 2. MediaPipe Model Asset
+
+The official MediaPipe Face Landmarker model asset is located at:
+`backend/models/face_landmarker.task`
+
+If downloading manually or configuring in CI/CD:
+```bash
+curl -o backend/models/face_landmarker.task https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+```
+
+### 3. Running the Backend Server
 
 ```bash
 uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
@@ -126,7 +153,7 @@ uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 - Interactive API Docs (Swagger UI): `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
 
-### 3. Running Automated Tests
+### 4. Running Automated Tests
 
 ```bash
 python -m pytest backend/tests -v
@@ -134,12 +161,36 @@ python -m pytest backend/tests -v
 
 ---
 
+## 📡 API Endpoints (Phase 2)
+
+| Method | Endpoint | Description | Status Code |
+|---|---|---|---|
+| `GET` | `/api/health` | Service health status check | `200 OK` |
+| `POST` | `/api/images/preprocess` | In-memory image ingestion, orientation correction, and resizing | `200 OK` |
+| `POST` | `/api/faces/detect` | MediaPipe Face Landmarker detection, single-face validation, and 478 3D landmark extraction | `200 OK` |
+
+---
+
+## 🧠 What MediaPipe Does vs. What It Does Not Do
+
+| Capability | MediaPipe Face Landmarker | Custom Loomis AI Engine (Phases 3–6) |
+|---|:---:|:---:|
+| 3D Surface Mesh Extraction (478 points) | ✅ YES | Uses MediaPipe coordinates |
+| Real-time inference (<50ms on CPU) | ✅ YES | Integrated in pipeline |
+| Cranium Sphere Estimation | ❌ NO | ✅ Custom 3D least-squares fitting |
+| Lateral Temporal Cut-Planes | ❌ NO | ✅ Custom perspective ellipse projection |
+| Classical Facial Thirds Axis | ❌ NO | ✅ Custom anatomical proportion solver |
+| Progressive Step-by-Step Drawing Steps | ❌ NO | ✅ Staged rendering engine |
+| Pedagogical Art Guidance & Instructions | ❌ NO | ✅ Contextual tutorial engine |
+
+---
+
 ## 🗺️ Development Roadmap
 
 - **Phase 0: Project Foundation** *(Completed)* – Directory structure, specifications, architecture blueprints, repository standards.
 - **Phase 1: Image Upload and Preprocessing** *(Completed)* – Secure in-memory file upload API, content-based validation, EXIF orientation correction, and aspect-ratio-preserving resizing.
-- **Phase 2: Face Detection** – Face detection validation, bounding box extraction, and multi-face rejection.
-- **Phase 3: Facial Landmarks and Head Pose Estimation** – MediaPipe Face Landmarker integration, 3D coordinate mapping, and pitch/yaw/roll computation.
+- **Phase 2: Face Detection and Landmark Extraction** *(Completed)* – MediaPipe Face Landmarker Tasks API integration, single-face policy validation, 478 dense 3D landmarks extraction, and normalized to pixel coordinate conversion.
+- **Phase 3: Facial Landmarks and Head Pose Estimation** – 3D head pose orientation (pitch, yaw, roll) and facial symmetry vectors.
 - **Phase 4: Loomis Construction Engine** – Mathematical cranium sphere calculation, lateral cut plane fitting, and facial thirds line generation.
 - **Phase 5: Progressive Drawing Generation** – Visual rendering of progressive drawing stages with vector and raster overlays.
 - **Phase 6: Drawing Tutorial Engine** – Instructional copy synthesis, contextual drawing tips, and step-by-step guidance payload.
@@ -152,7 +203,6 @@ python -m pytest backend/tests -v
 
 ## 🚦 Current Development Status
 
-- **Current Phase**: **Phase 1 – Image Upload and Preprocessing**
-- **Status**: Completed (15 / 15 automated tests passing; live endpoints verified)
-- **Next Phase**: Phase 2 – Face Detection (pending review and approval)
-
+- **Current Phase**: **Phase 2 – Face Detection and Landmark Extraction**
+- **Status**: Completed (24 / 24 automated tests passing; live endpoints verified)
+- **Next Phase**: Phase 3 – Facial Landmarks and Head Pose Estimation (pending review and approval)

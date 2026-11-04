@@ -1,5 +1,5 @@
 # ==========================================
-# Loomis AI - Backend Dependencies (Phase 1)
+# Loomis AI - Backend Dependencies (Phase 2)
 # ==========================================
 
 # Web Framework & ASGI Server
@@ -11,10 +11,13 @@ python-multipart>=0.0.9,<0.0.33
 pydantic>=2.6.0,<2.13.0
 pydantic-settings>=2.2.0,<2.16.0
 
-# Image Processing (Pillow strictly; MediaPipe deferred to Phase 3)
+# Image Processing
 pillow>=10.2.0,<14.0.0
+
+# Computer Vision & Machine Learning (Phase 2)
+mediapipe>=0.10.14,<1.3.0
+numpy>=1.26.0,<3.0.0
 
 # Testing & Client
 pytest>=8.0.0,<10.0.0
 httpx>=0.27.0,<0.29.0
-

@@ -1,9 +1,21 @@
 """Services package for Loomis AI."""
 
+from backend.services.face_detector import (
+    DEFAULT_MODEL_PATH,
+    FaceDetectionError,
+    FaceDetectionResult,
+    FaceDetectorService,
+    ModelLoadError,
+    ModelNotFoundError,
+    MultipleFacesDetectedError,
+    NoFaceDetectedError,
+    get_face_detector_service,
+)
 from backend.services.image_processor import (
     MAX_TARGET_DIMENSION,
     PreprocessingResult,
     preprocess_portrait,
+    preprocess_to_pil,
 )
 from backend.services.image_validator import (
     ALLOWED_FORMATS,
@@ -21,6 +33,7 @@ from backend.services.image_validator import (
 
 __all__ = [
     "preprocess_portrait",
+    "preprocess_to_pil",
     "PreprocessingResult",
     "MAX_TARGET_DIMENSION",
     "validate_image_bytes",
@@ -34,5 +47,13 @@ __all__ = [
     "MAX_FILE_SIZE_MB",
     "MAX_IMAGE_DIMENSION",
     "ALLOWED_FORMATS",
+    "FaceDetectorService",
+    "FaceDetectionResult",
+    "FaceDetectionError",
+    "NoFaceDetectedError",
+    "MultipleFacesDetectedError",
+    "ModelNotFoundError",
+    "ModelLoadError",
+    "get_face_detector_service",
+    "DEFAULT_MODEL_PATH",
 ]
-

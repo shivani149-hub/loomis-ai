@@ -118,6 +118,32 @@ def _encode_jpeg_base64(image: Image.Image, quality: int = DEFAULT_JPEG_QUALITY)
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
+def preprocess_to_pil(file_bytes: bytes) -> Tuple[Image.Image, str, int, int]:
+    """Execute validation and preprocessing, returning the processed PIL Image in RGB.
+
+    1. Validates file bytes, dimensions, and format.
+    2. Corrects EXIF orientation.
+    3. Normalizes color channels to standard RGB.
+    4. Proportionally downsizes to 1024px maximum edge.
+
+    Args:
+        file_bytes: Raw binary bytes of uploaded portrait.
+
+    Returns:
+        Tuple of (processed_pil_image, detected_format, orig_width, orig_height).
+    """
+    # 1. Validate raw bytes first (raises ImageValidationError on failure)
+    detected_format, _, _ = validate_image_bytes(file_bytes)
+
+    # 2. Decode in memory safely
+    with Image.open(io.BytesIO(file_bytes)) as raw_image:
+        oriented_image = _normalize_orientation(raw_image)
+        orig_width, orig_height = oriented_image.size
+        rgb_image = _convert_to_rgb(oriented_image)
+        processed_image = _resize_aspect_ratio(rgb_image, MAX_TARGET_DIMENSION)
+        return processed_image, detected_format, orig_width, orig_height
+
+
 def preprocess_portrait(file_bytes: bytes) -> PreprocessingResult:
     """Execute complete validation and preprocessing pipeline for a portrait upload.
 
@@ -133,33 +159,17 @@ def preprocess_portrait(file_bytes: bytes) -> PreprocessingResult:
     Returns:
         PreprocessingResult containing metadata and Base64-encoded image string.
     """
-    # 1. Validate raw bytes first (raises ImageValidationError on failure)
-    detected_format, _, _ = validate_image_bytes(file_bytes)
+    processed_image, detected_format, orig_width, orig_height = preprocess_to_pil(file_bytes)
+    proc_width, proc_height = processed_image.size
+    base64_str = _encode_jpeg_base64(processed_image)
 
-    # 2. Decode in memory safely
-    with Image.open(io.BytesIO(file_bytes)) as raw_image:
-        # Correct orientation
-        oriented_image = _normalize_orientation(raw_image)
-        orig_width, orig_height = oriented_image.size
-
-        # Convert to RGB with clean white backdrop for alpha channels
-        rgb_image = _convert_to_rgb(oriented_image)
-
-        # Proportionally resize keeping aspect ratio
-        processed_image = _resize_aspect_ratio(rgb_image, MAX_TARGET_DIMENSION)
-        proc_width, proc_height = processed_image.size
-
-        # Encode to JPEG Base64
-        base64_str = _encode_jpeg_base64(processed_image)
-
-        return PreprocessingResult(
-            original_width=orig_width,
-            original_height=orig_height,
-            processed_width=proc_width,
-            processed_height=proc_height,
-            original_format=detected_format,
-            processed_format="JPEG",
-            image_base64=base64_str,
-            processing_status="success",
-        )
-
+    return PreprocessingResult(
+        original_width=orig_width,
+        original_height=orig_height,
+        processed_width=proc_width,
+        processed_height=proc_height,
+        original_format=detected_format,
+        processed_format="JPEG",
+        image_base64=base64_str,
+        processing_status="success",
+    )

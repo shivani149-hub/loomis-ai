@@ -8,7 +8,7 @@ This roadmap defines the structured, phase-by-phase development lifecycle for th
 
 ```
 Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 5 ──► Phase 6 ──► Phase 7 ──► Phase 8 ──► Phase 9 ──► Phase 10
-(Found.)    (Upload)    (Detect)    (Landmarks) (Loomis)    (Drawing)   (Tutorial)  (React Web) (E2E Test)  (Mobile)    (Adv. Imp.)
+(Found.)    (Upload)    (Landmarks) (Pose/Ang.) (Loomis)    (Drawing)   (Tutorial)  (React Web) (E2E Test)  (Mobile)    (Adv. Imp.)
 ```
 
 ---
@@ -45,27 +45,28 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 
 
 ---
 
-### Phase 2: Face Detection
-- **Objective**: Implement face detection and validation logic to verify portrait suitability before heavy processing.
+### Phase 2: Face Detection and Landmark Extraction (Completed)
+- **Objective**: Integrate MediaPipe Face Landmarker Tasks API, detect faces from preprocessed portraits, extract 478 dense 3D facial landmarks, and calculate pixel coordinates.
 - **Key Deliverables**:
-  - Face detection service using MediaPipe / OpenCV.
-  - Single-face constraint validation (detect and gracefully reject multi-person photos or scenes with zero faces).
-  - Face bounding box extraction and framing validation (rejecting faces too small or severely cropped).
-  - Clear user-facing error messages for rejected uploads.
-- **Acceptance Criteria**: Pipeline reliably detects faces in reference test sets, passes valid single portraits, and rejects multi-face or zero-face images with precise error diagnostics.
+  - Downloaded official `face_landmarker.task` model asset into `backend/models/`.
+  - Face detection and landmarking service (`backend/services/face_detector.py`) with thread-safe model caching and lazy/preloaded lifecycle management.
+  - `POST /api/faces/detect` endpoint returning image dimensions, face count, and 478 landmarks.
+  - Single-face constraint validation (detecting and rejecting images with zero or multiple faces).
+  - Landmark coordinate conversion from normalized $[0, 1]$ space to preprocessed pixel space while preserving canonical landmark indices.
+  - Comprehensive automated tests covering detection, zero-face rejection, multi-face rejection, coordinate conversion accuracy, model caching, and missing model handling.
+  - Phase 2 verification report (`docs/phase-reports/phase-2.md`).
+- **Acceptance Criteria**: Model loads efficiently without redundant reloading; returns all 478 landmarks in order with accurate pixel conversion; gracefully handles error states and multi-face cases.
+- **Status**: ✅ Completed.
 
 ---
 
 ### Phase 3: Facial Landmarks and Head Pose Estimation
-- **Objective**: Extract dense 3D facial mesh coordinates and compute precise head rotation angles.
+- **Objective**: Derive 3D head pose orientation (pitch, yaw, roll) from facial landmarks and establish facial symmetry vectors.
 - **Key Deliverables**:
-  - MediaPipe Face Landmarker integration (extracting 478 3D landmarks).
-  - Landmark extraction service transforming raw normalized coordinates into metric pixel space.
-  - Head pose estimation algorithm:
-    - Deriving **Pitch** (vertical nod), **Yaw** (lateral turn), and **Roll** (in-plane tilt).
-    - Categorizing pose into standard portrait angles (Frontal, Slight 3/4, Full 3/4, Profile, Upward/Downward tilt).
-  - Visualization script saving landmark points over test portraits for visual inspection.
-- **Acceptance Criteria**: Accurate 3D landmark coordinates and pose angles calculated and validated on frontal, 3/4, and tilted test portrait sets.
+  - Pose estimation service computing Euler angles (Pitch, Yaw, Roll).
+  - Categorization of portrait angles (Frontal, Slight 3/4, Full 3/4, Profile, Upward/Downward tilt).
+  - Feature bounding metrics and facial midline extraction.
+- **Acceptance Criteria**: Accurate rotation angles calculated across frontal, 3/4, and tilted test sets.
 
 ---
 
@@ -153,4 +154,3 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 
   - Stylized digital pencil and charcoal line rendering.
   - Experimental user drawing comparison: Allowing users to upload their sketch and receive alignment feedback against the Loomis construction lines.
 - **Acceptance Criteria**: Experimental features documented, benchmarked, and optionally enabled via API flags.
-
