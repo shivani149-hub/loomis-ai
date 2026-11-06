@@ -11,6 +11,17 @@ from backend.services.face_detector import (
     NoFaceDetectedError,
     get_face_detector_service,
 )
+from backend.services.head_pose_estimator import (
+    CANONICAL_KEYPOINTS,
+    HeadPoseEstimationError,
+    HeadPoseEstimatorService,
+    HeadPoseResult,
+    InsufficientLandmarksError,
+    PoseSolverError,
+    classify_orientation,
+    get_head_pose_estimator_service,
+    rotation_matrix_to_euler_angles,
+)
 from backend.services.image_processor import (
     MAX_TARGET_DIMENSION,
     PreprocessingResult,
@@ -56,4 +67,13 @@ __all__ = [
     "ModelLoadError",
     "get_face_detector_service",
     "DEFAULT_MODEL_PATH",
+    "HeadPoseEstimatorService",
+    "HeadPoseResult",
+    "HeadPoseEstimationError",
+    "InsufficientLandmarksError",
+    "PoseSolverError",
+    "classify_orientation",
+    "rotation_matrix_to_euler_angles",
+    "get_head_pose_estimator_service",
+    "CANONICAL_KEYPOINTS",
 ]
