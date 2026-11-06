@@ -1,6 +1,7 @@
 """Main FastAPI application for Loomis AI Backend.
 
-Provides health inspection, image preprocessing, and face landmark detection endpoints.
+Provides health inspection, image preprocessing, face landmark detection,
+and 3D head pose estimation endpoints.
 """
 
 from contextlib import asynccontextmanager
@@ -14,10 +15,16 @@ from fastapi.responses import JSONResponse
 from backend.schemas.health import HealthResponse
 from backend.schemas.image import ImagePreprocessResponse
 from backend.schemas.landmark import FaceLandmarksResponse
+from backend.schemas.pose import HeadPoseResponse
 from backend.services.face_detector import (
     FaceDetectionError,
     FaceDetectorService,
     get_face_detector_service,
+)
+from backend.services.head_pose_estimator import (
+    HeadPoseEstimationError,
+    HeadPoseEstimatorService,
+    get_head_pose_estimator_service,
 )
 from backend.services.image_processor import preprocess_portrait
 from backend.services.image_validator import (
@@ -57,9 +64,9 @@ app = FastAPI(
     title="Loomis AI Backend",
     description=(
         "AI-Powered Step-by-Step Portrait Drawing Tutor API. "
-        "Phase 2: Face Detection and Landmark Extraction using MediaPipe Face Landmarker."
+        "Phase 3: Head Pose Estimation via 3D Perspective-n-Point Geometry."
     ),
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -87,6 +94,16 @@ async def image_validation_handler(request: Request, exc: ImageValidationError):
 async def face_detection_handler(request: Request, exc: FaceDetectionError):
     """Handle face detection and landmarking errors and map to standard HTTP responses."""
     logger.warning("Face detection failure: %s (HTTP %d)", exc.message, exc.status_code)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.message},
+    )
+
+
+@app.exception_handler(HeadPoseEstimationError)
+async def head_pose_error_handler(request: Request, exc: HeadPoseEstimationError):
+    """Handle head pose estimation failures and map to standard HTTP responses."""
+    logger.warning("Head pose estimation failure: %s (HTTP %d)", exc.message, exc.status_code)
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.message},
@@ -129,7 +146,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status="healthy",
         service="loomis-ai-backend",
-        version="0.2.0",
+        version="0.3.0",
     )
 
 
@@ -228,6 +245,65 @@ async def detect_face(
         image_height=result.image_height,
         faces_detected=result.faces_detected,
         landmarks=result.landmarks,
+    )
+
+
+@app.post(
+    "/api/faces/pose",
+    response_model=HeadPoseResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Estimate 3D head pose and orientation",
+    tags=["Head Pose"],
+)
+async def estimate_head_pose(
+    file: Annotated[UploadFile, File(description="Portrait image (JPEG, PNG, or WebP)")],
+    detector: Annotated[FaceDetectorService, Depends(get_face_detector_service)],
+    pose_estimator: Annotated[HeadPoseEstimatorService, Depends(get_head_pose_estimator_service)],
+) -> HeadPoseResponse:
+    """Estimate 3D head pose orientation (Yaw, Pitch, Roll) using facial landmarks.
+
+    - Reuses Phase 1 image validation and preprocessing.
+    - Extracts facial landmarks using Phase 2 MediaPipe detector.
+    - Computes 3D head rotation and translation via canonical PnP geometric solver.
+    - Classifies orientation into FRONT, THREE_QUARTER_LEFT, THREE_QUARTER_RIGHT,
+      PROFILE_LEFT, or PROFILE_RIGHT.
+    - Computes a legitimate confidence score from reprojection residuals and face scale.
+    """
+    logger.info(
+        "Received head pose estimation request (filename: %s, declared_type: %s)",
+        file.filename,
+        file.content_type,
+    )
+
+    file_bytes = await _read_upload_file_safely(file)
+    detection_result = detector.detect_landmarks_from_bytes(file_bytes, require_single_face=True)
+
+    pose_result = pose_estimator.estimate_pose(
+        landmarks=detection_result.landmarks,
+        image_width=detection_result.image_width,
+        image_height=detection_result.image_height,
+    )
+
+    logger.info(
+        "Head pose estimated successfully: orientation=%s, yaw=%.1f deg, pitch=%.1f deg, roll=%.1f deg, conf=%.2f",
+        pose_result.orientation.value,
+        pose_result.yaw_degrees,
+        pose_result.pitch_degrees,
+        pose_result.roll_degrees,
+        pose_result.confidence,
+    )
+
+    return HeadPoseResponse(
+        success=True,
+        message="Head pose estimated successfully.",
+        yaw_degrees=pose_result.yaw_degrees,
+        pitch_degrees=pose_result.pitch_degrees,
+        roll_degrees=pose_result.roll_degrees,
+        orientation=pose_result.orientation,
+        confidence=pose_result.confidence,
+        quality_metrics=pose_result.quality_metrics,
+        rotation_vector=pose_result.rotation_vector,
+        translation_vector=pose_result.translation_vector,
     )
 
 
